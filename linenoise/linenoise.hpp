@@ -159,7 +159,7 @@ static std::vector<std::string> history;
 /* The linenoiseState structure represents the state during line editing.
  * We pass this state to functions implementing specific editing
  * functionalities. */
-struct linenoiseState {
+struct State {
   int ifd;            /* Terminal stdin file descriptor. */
   int ofd;            /* Terminal stdout file descriptor. */
   char* buf;          /* Edited line buffer. */
@@ -197,7 +197,7 @@ enum KEY_ACTION {
 
 void at_exit();
 bool AddHistory(const char* line);
-void refreshLine(struct linenoiseState* l);
+void refreshLine(struct State* l);
 
 /* ============================ UTF8 utilities ============================== */
 
@@ -240,20 +240,18 @@ inline int unicodePrevUTF8CharLen(char* buf, int pos) {
 
 /* Get length of previous UTF8 character
  */
-inline int unicodeUTF8CharLen(char* buf, int buf_len, int pos) {
-  if (pos == buf_len) {
-    return 0;
+int utf8_char_length(char const* buf, const int buf_len, const int pos) noexcept {
+  if (pos == buf_len) { return 0; }
+  if (const auto ch = static_cast<unsigned> (buf[pos])) {
+    if (ch < 0x80) {
+      return 1;
+    } else if (ch < 0xE0) {
+      return 2;
+    } else if (ch < 0xF0) {
+      return 3;
+    }
   }
-  unsigned char ch = buf[pos];
-  if (ch < 0x80) {
-    return 1;
-  } else if (ch < 0xE0) {
-    return 2;
-  } else if (ch < 0xF0) {
-    return 3;
-  } else {
     return 4;
-  }
 }
 
 /* Convert UTF8 to Unicode code point
@@ -297,9 +295,9 @@ inline int unicodeGraphemeLen(char* buf, int buf_len, int pos) {
     return 0;
   }
   int beg = pos;
-  pos += unicodeUTF8CharLen(buf, buf_len, pos);
+  pos += utf8_char_length(buf, buf_len, pos);
   while (pos < buf_len) {
-    int len = unicodeUTF8CharLen(buf, buf_len, pos);
+    int len = utf8_char_length(buf, buf_len, pos);
     int cp = 0;
     unicodeUTF8CharToCodePoint(buf + pos, len, &cp);
     if (!unicodeIsCombiningChar(cp)) {
@@ -329,8 +327,8 @@ inline int unicodePrevGraphemeLen(char* buf, int pos) {
   return 0;
 }
 
-constexpr bool is_ansi_escape(std::string_view buf, int& len) {
-  constexpr auto kEscape = std::string_view{ "ABCDEFGHJKSTfm" };
+bool is_ansi_escape(std::string_view buf, int& len) {
+  constexpr auto kEscape = "ABCDEFGHJKSTfm"sv;
   if (buf.starts_with("\033[")) {
     for (int offset = 2; offset < buf.length(); ++offset) {
       if (std::any_of(kEscape.begin(), kEscape.end(),
@@ -656,7 +654,7 @@ inline void linenoiseBeep(void) {
  *
  * The state of the editing is encapsulated into the pointed linenoiseState
  * structure as described in the structure definition. */
-inline int completeLine(struct linenoiseState* ls, char* cbuf, int* c) {
+inline int completeLine(struct State* ls, char* cbuf, int* c) {
   std::vector<std::string> lc;
   int nread = 0, nwritten;
   *c = 0;
@@ -670,7 +668,7 @@ inline int completeLine(struct linenoiseState* ls, char* cbuf, int* c) {
     while (!stop) {
       /* Show completion or original buffer */
       if (i < static_cast<int>(lc.size())) {
-        struct linenoiseState saved = *ls;
+        struct State saved = *ls;
 
         ls->len = ls->pos = static_cast<int>(lc[i].size());
         ls->buf = &lc[i][0];
@@ -736,7 +734,7 @@ inline void SetCompletionCallback(CompletionCallback fn) {
  *
  * Rewrite the currently edited line accordingly to the buffer content,
  * cursor position, and number of columns of the terminal. */
-inline void refreshSingleLine(struct linenoiseState* l) {
+inline void refreshSingleLine(struct State* l) {
   char seq[64];
   int pcolwid =
     unicode_column_pos(
@@ -780,7 +778,7 @@ inline void refreshSingleLine(struct linenoiseState* l) {
  *
  * Rewrite the currently edited line accordingly to the buffer content,
  * cursor position, and number of columns of the terminal. */
-inline void refreshMultiLine(struct linenoiseState* l) {
+inline void refreshMultiLine(struct State* l) {
   char seq[64];
   int pcolwid =
     unicode_column_pos(
@@ -870,7 +868,7 @@ inline void refreshMultiLine(struct linenoiseState* l) {
 
 /* Calls the two low level functions refreshSingleLine() or
  * refreshMultiLine() according to the selected mode. */
-inline void refreshLine(struct linenoiseState* l) {
+inline void refreshLine(struct State* l) {
   if (mlmode) {
     refreshMultiLine(l);
   } else {
@@ -881,7 +879,7 @@ inline void refreshLine(struct linenoiseState* l) {
 /* Insert the character 'c' at cursor current position.
  *
  * On error writing to the terminal -1 is returned, otherwise 0. */
-inline int linenoiseEditInsert(struct linenoiseState* l, const char* cbuf,
+inline int linenoiseEditInsert(struct State* l, const char* cbuf,
                                int clen) {
   if (l->len < l->buflen) {
     if (l->len == l->pos) {
@@ -922,7 +920,7 @@ inline int linenoiseEditInsert(struct linenoiseState* l, const char* cbuf,
 }
 
 /* Move cursor on the left. */
-inline void linenoiseEditMoveLeft(struct linenoiseState* l) {
+inline void linenoiseEditMoveLeft(struct State* l) {
   if (l->pos > 0) {
     l->pos -= unicodePrevGraphemeLen(l->buf, l->pos);
     refreshLine(l);
@@ -930,7 +928,7 @@ inline void linenoiseEditMoveLeft(struct linenoiseState* l) {
 }
 
 /* Move cursor on the right. */
-inline void linenoiseEditMoveRight(struct linenoiseState* l) {
+inline void linenoiseEditMoveRight(struct State* l) {
   if (l->pos != l->len) {
     l->pos += unicodeGraphemeLen(l->buf, l->len, l->pos);
     refreshLine(l);
@@ -938,7 +936,7 @@ inline void linenoiseEditMoveRight(struct linenoiseState* l) {
 }
 
 /* Move cursor to the start of the line. */
-inline void linenoiseEditMoveHome(struct linenoiseState* l) {
+inline void linenoiseEditMoveHome(struct State* l) {
   if (l->pos != 0) {
     l->pos = 0;
     refreshLine(l);
@@ -946,7 +944,7 @@ inline void linenoiseEditMoveHome(struct linenoiseState* l) {
 }
 
 /* Move cursor to the end of the line. */
-inline void linenoiseEditMoveEnd(struct linenoiseState* l) {
+inline void linenoiseEditMoveEnd(struct State* l) {
   if (l->pos != l->len) {
     l->pos = l->len;
     refreshLine(l);
@@ -958,7 +956,7 @@ inline void linenoiseEditMoveEnd(struct linenoiseState* l) {
 #define LINENOISE_HISTORY_NEXT 0
 #define LINENOISE_HISTORY_PREV 1
 
-inline void linenoiseEditHistoryNext(struct linenoiseState* l, int dir) {
+inline void linenoiseEditHistoryNext(struct State* l, int dir) {
   if (history.size() > 1) {
     /* Update the current history entry before to
      * overwrite it with the next one. */
@@ -981,7 +979,7 @@ inline void linenoiseEditHistoryNext(struct linenoiseState* l, int dir) {
 
 /* Delete the character at the right of the cursor without altering the cursor
  * position. Basically this is what happens with the "Delete" keyboard key. */
-inline void linenoiseEditDelete(struct linenoiseState* l) {
+inline void linenoiseEditDelete(struct State* l) {
   if (l->len > 0 && l->pos < l->len) {
     int glen = unicodeGraphemeLen(l->buf, l->len, l->pos);
     memmove(l->buf + l->pos, l->buf + l->pos + glen, l->len - l->pos - glen);
@@ -992,7 +990,7 @@ inline void linenoiseEditDelete(struct linenoiseState* l) {
 }
 
 /* Backspace implementation. */
-inline void linenoiseEditBackspace(struct linenoiseState* l) {
+inline void linenoiseEditBackspace(struct State* l) {
   if (l->pos > 0 && l->len > 0) {
     int glen = unicodePrevGraphemeLen(l->buf, l->pos);
     memmove(l->buf + l->pos - glen, l->buf + l->pos, l->len - l->pos);
@@ -1005,7 +1003,7 @@ inline void linenoiseEditBackspace(struct linenoiseState* l) {
 
 /* Delete the previosu word, maintaining the cursor at the start of the
  * current word. */
-inline void linenoiseEditDeletePrevWord(struct linenoiseState* l) {
+inline void linenoiseEditDeletePrevWord(struct State* l) {
   int old_pos = l->pos;
   int diff;
 
@@ -1027,7 +1025,7 @@ inline void linenoiseEditDeletePrevWord(struct linenoiseState* l) {
  * The function returns the length of the current buffer. */
 inline int linenoiseEdit(int stdin_fd, int stdout_fd, char* buf, int buflen,
                          const char* prompt) {
-  struct linenoiseState l;
+  struct State l;
 
   /* Populate the linenoise state that we pass to functions implementing
    * specific editing functionalities. */

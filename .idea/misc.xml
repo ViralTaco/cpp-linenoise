@@ -6,7 +6,7 @@
   <component name="CidrRootsConfiguration">
     <sourceRoots>
       <file path="$PROJECT_DIR$/linenoise" />
-      <file path="$PROJECT_DIR$/linenoise/win32" />
+      <file path="$PROJECT_DIR$/linenoise/model/win32" />
     </sourceRoots>
   </component>
   <component name="JavaScriptSettings">
