@@ -1,22 +1,35 @@
-#ifndef VT_COMPLETIONCALLBACK_STRINGLIST_HPP
+#ifndef VT_NULLCALLBACKPOINTERERROR_HPP
 // ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-// ┃ CompletionCallback.hpp:                              ┃
+// ┃ NullCallbackFunctionPointerException.hpp:                                        ┃
 // ┃ Copyright (c) 2020 viraltaco_ (viraltaco@gmx.com)    ┃
 // ┃ https://github.com/ViralTaco                         ┃ 
 // ┃ SPDX-License-Identifier: MIT                         ┃
 // ┃ <http://www.opensource.org/licenses/MIT>             ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-#define VT_COMPLETIONCALLBACK_STRINGLIST_HPP "2.0.0"
+#define VT_NULLCALLBACKPOINTERERROR_HPP "1.0.1"
 
-#include <functional>
-#include <vector>
+#include <exception>
 #include <string>
 
 namespace viraltaco_ {
+class NullCallbackPointerError : public std::exception {
+public:
+  using Self = NullCallbackPointerError;
+  static constexpr auto value = false;
+  
+private: // members
+  std::string message_;
 
-using StringList = std::vector<std::string>;
-using CompletionCallback = std::function<void(char const*, StringList&)>;
+public: // inits
+  template <typename StringType>
+  explicit NullCallbackPointerError(StringType message) noexcept
+    : message_{ message }
+  {}
 
+public: // instance methods
+  [[nodiscard]] char const* what() const noexcept override {
+    return this->message_.c_str();
+  }
+};
 } namespace vt = viraltaco_;
-
 #endif

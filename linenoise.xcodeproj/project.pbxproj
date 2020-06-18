@@ -34,7 +34,6 @@
 		D80936F72495660A007E1C80 /* CompletionCallback+StringList.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "CompletionCallback+StringList.hpp"; sourceTree = "<group>"; };
 		D80936F82495660A007E1C80 /* ViralNoise.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ViralNoise.hpp; sourceTree = "<group>"; };
 		D80936F92495660A007E1C80 /* ViralNoise.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ViralNoise.cpp; sourceTree = "<group>"; };
-		D80936FB2495660A007E1C80 /* winnoise.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = winnoise.hpp; sourceTree = "<group>"; };
 		D80936FD249566F6007E1C80 /* Completions.hpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.h; path = Completions.hpp; sourceTree = "<group>"; tabWidth = 2; };
 		D80936FE249566F6007E1C80 /* Completions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Completions.cpp; sourceTree = "<group>"; };
 		D8516F03249320FA0026419D /* example.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = example.cpp; sourceTree = "<group>"; };
@@ -76,7 +75,6 @@
 				D80936F72495660A007E1C80 /* CompletionCallback+StringList.hpp */,
 				D80936F82495660A007E1C80 /* ViralNoise.hpp */,
 				D80936F92495660A007E1C80 /* ViralNoise.cpp */,
-				D80936FA2495660A007E1C80 /* win32 */,
 			);
 			path = model;
 			sourceTree = "<group>";
@@ -87,14 +85,6 @@
 				D80936F62495660A007E1C80 /* unicode_constants.hpp */,
 			);
 			path = unicode;
-			sourceTree = "<group>";
-		};
-		D80936FA2495660A007E1C80 /* win32 */ = {
-			isa = PBXGroup;
-			children = (
-				D80936FB2495660A007E1C80 /* winnoise.hpp */,
-			);
-			path = win32;
 			sourceTree = "<group>";
 		};
 		D8516F02249320FA0026419D /* example */ = {

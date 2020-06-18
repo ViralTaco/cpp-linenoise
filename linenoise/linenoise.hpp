@@ -1,160 +1,5 @@
-/*
- *  linenoise.hpp -- Multi-platfrom C++ header-only linenoise library.
- *
- *  All credits and commendations have to go to the authors of the
- *  following excellent libraries.
- *
- *  - linenoise.h and linenose.c (https://github.com/antirez/linenoise)
- *  - ANSI.c (https://github.com/adoxa/ansicon)
- *  - Win32_ANSI.h and Win32_ANSI.c (https://github.com/MSOpenTech/redis)
- *
- * ------------------------------------------------------------------------
- *
- *  Copyright (c) 2015 yhirose
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *
- *  1. Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *  2. Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
 
-/* linenoise.h -- guerrilla line editing library against the idea that a
- * line editing lib needs to be 20,000 lines of C code.
- *
- * See linenoise.c for more information.
- *
- * ------------------------------------------------------------------------
- *
- * Copyright (c) 2010, Salvatore Sanfilippo <antirez at gmail dot com>
- * Copyright (c) 2010, Pieter Noordhuis <pcnoordhuis at gmail dot com>
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *  *  Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *
- *  *  Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
- * ANSI.c - ANSI escape sequence console driver.
- *
- * Copyright (C) 2005-2014 Jason Hood
- * This software is provided 'as-is', without any express or implied
- * warranty.  In no event will the author be held liable for any damages
- * arising from the use of this software.
- *
- * Permission is granted to anyone to use this software for any purpose,
- * including commercial applications, and to alter it and redistribute it
- * freely, subject to the following restrictions:
- *
- * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
- * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
- * 3. This notice may not be removed or altered from any source distribution.
- *
- * Jason Hood
- * jadoxa@yahoo.com.au
- */
-
-#ifndef VT_LINENOISE_HPP
-/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-/// ┃ linenoise.hpp:                                       ┃
-/// ┃ Copyright (c) 2020 viraltaco_ (viraltaco@gmx.com)    ┃
-/// ┃ https://github.com/ViralTaco                         ┃
-/// ┃ SPDX-License-Identifier: MIT                         ┃
-/// ┃ <http://www.opensource.org/licenses/MIT>             ┃
-/// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-#define VT_LINENOISE_HPP "2.0.0"
-
-#ifndef _WIN32
-#  include <sys/ioctl.h>
-#  include <termios.h>
-#  include <unistd.h>
-#else
-#  include "win32/winnoise.hpp"
-#endif
-
-#include "unicode/unicode_constants.hpp"
-
-#include <sys/types.h>
-
-#include <cctype>
-#include <cerrno>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <string>
-#include <vector>
-
-namespace linenoise {
-using std::string_view_literals::operator""sv;
-
-typedef std::function<void(const char*, std::vector<std::string>&)>
-    CompletionCallback;
-
-#define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
-#define LINENOISE_MAX_LINE 4096
-
-static constexpr std::string_view kUnsupportedTerms[3] {
-  "dumb"sv, "cons25"sv, "emacs"sv
-};
-
-static CompletionCallback completionCallback;
-
-#ifndef _WIN32
-
-static struct termios orig_termios; /* In order to restore at exit.*/
-#endif
-
-static bool rawmode =
-    false; /* For atexit() function to check if restore is needed*/
-static bool mlmode = false; /* Multi line mode. Default is single line. */
-static bool atexit_registered = false; /* Register atexit just 1 time. */
-static size_t history_max_len = LINENOISE_DEFAULT_HISTORY_MAX_LEN;
-
-static std::vector<std::string> history;
+#include <typeinfo>
 
 /* The linenoiseState structure represents the state during line editing.
  * We pass this state to functions implementing specific editing
@@ -459,7 +304,6 @@ inline bool is_unsupported_term() {
 
 /* Raw mode: 1960 magic shit. */
 inline bool use_raw(int fd) {
-#ifndef _WIN32
   struct termios raw;
 
   if (!isatty(STDIN_FILENO)) {
@@ -496,37 +340,7 @@ inline bool use_raw(int fd) {
     goto fatal;
   }
   rawmode = true;
-#else
-  if (!atexit_registered) {
-    /* Cleanup them at exit */
-    atexit(linenoiseAtExit);
-    atexit_registered = true;
 
-    /* Init windows console handles only once */
-    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) goto fatal;
-  }
-
-  DWORD consolemodeOut;
-  if (!GetConsoleMode(hOut, &consolemodeOut)) {
-    CloseHandle(hOut);
-    errno = ENOTTY;
-    return false;
-  };
-
-  hIn = GetStdHandle(STD_INPUT_HANDLE);
-  if (hIn == INVALID_HANDLE_VALUE) {
-    CloseHandle(hOut);
-    errno = ENOTTY;
-    return false;
-  }
-
-  GetConsoleMode(hIn, &consolemodeIn);
-  /* Enable raw mode */
-  SetConsoleMode(hIn, consolemodeIn & ~ENABLE_PROCESSED_INPUT);
-
-  rawmode = true;
-#endif
   return true;
 
 fatal:
@@ -1057,14 +871,8 @@ inline int linenoiseEdit(int stdin_fd, int stdout_fd, char* buf, int buflen,
     int nread;
     char seq[3];
 
-#ifdef _WIN32
-    nread = win32read(&c);
-    if (nread == 1) {
-      cbuf[0] = c;
-    }
-#else
+
     nread = unicodeReadUTF8Char(l.ifd, cbuf, &c);
-#endif
     if (nread <= 0) {
       return (int)l.len;
     }
@@ -1285,7 +1093,10 @@ inline std::string Readline(const char* prompt) {
 /* ================================ History ================================= */
 
 /* At exit we'll try to fix the terminal to the initial conditions. */
-inline void at_exit() { disableRawMode(STDIN_FILENO); }
+inline void at_exit() {
+    disableRawMode(STDIN_FILENO);
+    
+}
 
 /* This is the API call to add a new entry in the linenoise history.
  * It uses a fixed array of char pointers that are shifted (memmoved)
@@ -1361,12 +1172,5 @@ inline bool LoadHistory(const char* path) {
 inline const std::vector<std::string>& GetHistory() { return history; }
 
 }  // namespace linenoise
-
-#ifdef _WIN32
-#undef isatty
-#undef write
-#undef read
-#pragma warning(pop)
-#endif
 
 #endif /* __LINENOISE_HPP */

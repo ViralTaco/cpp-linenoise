@@ -42,19 +42,16 @@ public: // members
     "emacs",
     nullptr, // Unknown therefore unsupported.
   };
-  /// Callback function.
-  static CallbackType completion_callback;
   /// Multi line mode. Default is single line.
   bool allow_multiline = false;
-  /// Register atexit just 1 time.
-  bool atexit_registered = false;
   /// History length
   std::size_t history_max_len = Self::maximum::history_len;
-  
   /// For unsupported terminals
   bool is_raw_mode;
   Completions<StringLikeType> history;
   StringLikeType prompt;
+  /// Callback function.
+  CallbackType completion_callback;
   
 public: // inits
   /// No default constructor.
@@ -64,7 +61,7 @@ public: // inits
   
   
   /**
-   * This constructor take a prompt to be displayed on the terminal
+   * This constructor takes a prompt to be displayed on the terminal
    * and a {@code Completions<>} to add to the otherwise empty
    * history variable (of the same type) since both behave identically.
    *
@@ -76,6 +73,7 @@ public: // inits
     : is_raw_mode{ Self::is_unsupported_term() }
     , history{ completions }
     , prompt{ prompt }
+    , completion_callback{ history.callback }
   {}
   
   explicit ViralNoise(StringLikeType prompt)
@@ -86,7 +84,7 @@ public: // inits
 public: // destructors
   ~ViralNoise() noexcept {
     if (is_raw_mode) {
-      (is_raw_mode = tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) != -1);
+      is_raw_mode = (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios) != -1);
     }
   }
 

@@ -85,6 +85,12 @@
 		<Unit filename="/Users/viraltaco/Desktop/projects/cpp/Developer Tools/cpp-linenoise/example/example.cpp">
 			<Option target="example"/>
 		</Unit>
+		<Unit filename="/Users/viraltaco/Desktop/projects/cpp/Developer Tools/cpp-linenoise/linenoise/model/RawReader.hpp">
+			<Option target="example"/>
+		</Unit>
+		<Unit filename="/Users/viraltaco/Desktop/projects/cpp/Developer Tools/cpp-linenoise/linenoise/model/exceptions/IOException.hpp">
+			<Option target="example"/>
+		</Unit>
 		<Unit filename="/Users/viraltaco/Desktop/projects/cpp/Developer Tools/cpp-linenoise/example/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
